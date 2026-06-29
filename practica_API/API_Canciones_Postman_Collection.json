@@ -1,0 +1,668 @@
+{
+  "info": {
+    "_postman_id": "0b8b9c9a-7c92-4fbb-9e84-2b89928f94ee",
+    "name": "API Canciones - Playlist",
+    "description": "Colección de Postman para probar la API REST de canciones.\n\nIncluye GET, POST individual, POST múltiple, PATCH, DELETE y casos de error.\nLa variable baseUrl apunta por defecto a http://localhost:3000.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "cancionId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "createdId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Canciones",
+      "item": [
+        {
+          "name": "GET - Obtener todas las canciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/canciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones"
+              ]
+            },
+            "description": "Obtiene la lista completa de canciones. Respuesta esperada: 200 OK."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta es un arreglo\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - Crear una canción",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"The Black - Imminence\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones"
+              ]
+            },
+            "description": "Crea una canción. El servidor asigna automáticamente el ID y escuchada=false."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const respuesta = pm.response.json();",
+                  "pm.collectionVariables.set(\"createdId\", respuesta.id);",
+                  "",
+                  "pm.test(\"La canción tiene ID\", function () {",
+                  "    pm.expect(respuesta).to.have.property(\"id\");",
+                  "});",
+                  "",
+                  "pm.test(\"escuchada inicia en false\", function () {",
+                  "    pm.expect(respuesta.escuchada).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - Crear varias canciones",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"titulo\": \"Tsunami Sea - Spiritbox\"\n  },\n  {\n    \"titulo\": \"Circle With Me - Spiritbox\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones"
+              ]
+            },
+            "description": "Crea varias canciones mediante un arreglo JSON."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"La respuesta contiene varias canciones\", function () {",
+                  "    const respuesta = pm.response.json();",
+                  "    pm.expect(respuesta).to.be.an('array');",
+                  "    pm.expect(respuesta.length).to.eql(2);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - Marcar canción como escuchada",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"escuchada\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones/{{cancionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones",
+                "{{cancionId}}"
+              ]
+            },
+            "description": "Modifica el campo escuchada de la canción indicada por cancionId."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"La canción está escuchada\", function () {",
+                  "    pm.expect(pm.response.json().escuchada).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - Modificar canción recién creada",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"escuchada\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones/{{createdId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones",
+                "{{createdId}}"
+              ]
+            },
+            "description": "Usa el ID almacenado automáticamente por la petición POST individual."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Eliminar canción",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/canciones/{{cancionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones",
+                "{{cancionId}}"
+              ]
+            },
+            "description": "Elimina la canción indicada. Respuesta esperada: 204 No Content."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE - Eliminar canción recién creada",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/canciones/{{createdId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones",
+                "{{createdId}}"
+              ]
+            },
+            "description": "Elimina la canción creada por POST usando la variable createdId."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Casos de error",
+      "item": [
+        {
+          "name": "POST - Arreglo vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensaje de arreglo vacío\", function () {",
+                  "    pm.expect(pm.response.json().error).to.eql(\"Debes enviar al menos una canción\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - Título vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Título obligatorio\", function () {",
+                  "    pm.expect(pm.response.json().error).to.eql(\"El título es obligatorio\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST - Canción inválida dentro de arreglo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"titulo\": \"Canción válida\"\n  },\n  {\n    \"titulo\": \"\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - JSON no válido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\":\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones"
+              ]
+            },
+            "description": "Prueba el middleware de manejo de JSON inválido."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Tipo booleano inválido",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"escuchada\": \"true\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones",
+                "1"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH - Canción inexistente",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"escuchada\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones/9999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones",
+                "9999"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Canción inexistente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/canciones/9999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones",
+                "9999"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Experimentos de idempotencia",
+      "item": [
+        {
+          "name": "POST - Repetir creación",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Artificial Suicide - Bad Omens\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones"
+              ]
+            },
+            "description": "Ejecutar cuatro veces para demostrar que POST no es idempotente."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Repetir mismo estado",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"escuchada\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/canciones/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones",
+                "2"
+              ]
+            },
+            "description": "Ejecutar cinco veces para comprobar que asignar true repetidamente es idempotente."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Repetir eliminación",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/canciones/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "canciones",
+                "2"
+              ]
+            },
+            "description": "Ejecutar dos veces. La primera devuelve 204; la segunda debería devolver 404."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
