@@ -13,7 +13,12 @@ const env = {
   dbUser: process.env.DB_USER || "postgres",
   dbPassword: process.env.DB_PASSWORD || "",
   webhookSecret: process.env.WEBHOOK_SECRET || "",
-  publicBaseUrl: process.env.PUBLIC_BASE_URL || "http://localhost:3000"
+  publicBaseUrl: process.env.PUBLIC_BASE_URL || "http://localhost:3000",
+  whatsappAccessToken:
+    process.env.WHATSAPP_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN || "",
+  whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
+  whatsappWebhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || "",
+  whatsappGraphVersion: process.env.WHATSAPP_GRAPH_VERSION || "v25.0"
 };
 
 module.exports = env;

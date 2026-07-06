@@ -4,8 +4,9 @@
   "description": "MiniBot playlist con PostgreSQL, webhook e interfaz CRM",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch src/server.js",
+    "start": "node scripts/run-with-tunnel.js index.js",
+    "dev": "node scripts/run-with-tunnel.js --watch src/server.js",
+    "tunnel:install": "powershell -ExecutionPolicy Bypass -File scripts/install-cloudflared.ps1",
     "test": "echo \"No automated tests configured\""
   },
   "keywords": [],
