@@ -16,15 +16,32 @@ async function verifyWebhook(req, res) {
 }
 
 async function receiveWebhook(req, res) {
+  console.info("[WhatsApp] Webhook POST recibido.");
+  console.info(`[WhatsApp] Payload crudo: ${JSON.stringify(req.body)}`);
   const messages = whatsappService.extractIncomingMessages(req.body);
+  console.info(`[WhatsApp] Mensajes de texto extraidos: ${messages.length}`);
 
   for (const message of messages) {
-    const botResult = await botService.processIncomingMessage(
-      { from: message.from, text: message.text },
-      { publicBaseUrl: env.publicBaseUrl }
-    );
+    try {
+      console.info(`[WhatsApp] Procesando mensaje de ${message.from}: "${message.text}"`);
+      const botResult = await botService.processIncomingMessage(
+        { from: message.from, text: message.text },
+        { publicBaseUrl: env.publicBaseUrl }
+      );
 
-    await whatsappService.sendBotResponse(message.from, botResult);
+      console.info(
+        `[WhatsApp] Respuesta del bot para ${message.from}: "${botResult.message}"`
+      );
+      await whatsappService.sendBotResponse(message.from, botResult, {
+        phoneNumberId: message.phoneNumberId
+      });
+    } catch (error) {
+      console.error(
+        `[WhatsApp] Error procesando mensaje de ${message.from}: ${error.message}`
+      );
+      console.error(error);
+      throw error;
+    }
   }
 
   res.status(200).json({ received: true, processed: messages.length });

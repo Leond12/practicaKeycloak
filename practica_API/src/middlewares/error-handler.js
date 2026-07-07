@@ -17,6 +17,8 @@ function errorHandler(err, req, res, next) {
 
   if (statusCode >= 500) {
     console.error(err);
+  } else {
+    console.warn(`[HTTP ${statusCode}] ${code}: ${message}`);
   }
 
   return res.status(statusCode).json(error(code, message));

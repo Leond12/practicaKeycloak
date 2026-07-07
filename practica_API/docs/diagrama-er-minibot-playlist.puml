@@ -1,0 +1,119 @@
+@startuml
+hide circle
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam linetype ortho
+skinparam entity {
+  BackgroundColor #EEF3FB
+  BorderColor #6B7A90
+  FontColor #1F2A37
+}
+
+title Diagrama entidad-relacion - MiniBot Playlist API
+
+entity "contacts" as contacts {
+  * id : BIGSERIAL <<PK>>
+  --
+  * external_id : VARCHAR(100) <<UK>>
+  --
+  name : VARCHAR(150)
+  created_at : TIMESTAMPTZ
+  updated_at : TIMESTAMPTZ
+}
+
+entity "conversations" as conversations {
+  * id : BIGSERIAL <<PK>>
+  --
+  * contact_id : BIGINT <<FK>>
+  --
+  current_step : VARCHAR(50)
+  status : VARCHAR(30)
+  pending_song_title : VARCHAR(255)
+  created_at : TIMESTAMPTZ
+  updated_at : TIMESTAMPTZ
+}
+
+entity "messages" as messages {
+  * id : BIGSERIAL <<PK>>
+  --
+  * conversation_id : BIGINT <<FK>>
+  --
+  direction : VARCHAR(20)
+  message_type : VARCHAR(20)
+  text : TEXT
+  image_url : TEXT
+  flow_step : VARCHAR(50)
+  created_at : TIMESTAMPTZ
+}
+
+entity "songs" as songs {
+  * id : BIGSERIAL <<PK>>
+  --
+  title : VARCHAR(255)
+  listened : BOOLEAN
+  status : VARCHAR(30)
+  contact_id : BIGINT <<FK, nullable>>
+  conversation_id : BIGINT <<FK, nullable>>
+  created_at : TIMESTAMPTZ
+  updated_at : TIMESTAMPTZ
+}
+
+entity "webhook_events" as webhook_events {
+  * id : BIGSERIAL <<PK>>
+  --
+  * event_id : VARCHAR(150) <<UK>>
+  --
+  event_type : VARCHAR(100)
+  song_id : BIGINT <<FK, nullable>>
+  payload : JSONB
+  processed_at : TIMESTAMPTZ
+}
+
+contacts ||--o{ conversations : "contact_id"
+conversations ||--o{ messages : "conversation_id"
+contacts ||--o{ songs : "contact_id"
+conversations ||--o{ songs : "conversation_id"
+songs ||--o{ webhook_events : "song_id"
+
+note right of conversations
+  current_step:
+  - ASK_NAME
+  - ASK_SONG
+  - CONFIRM_SONG
+  - COMPLETED
+
+  status:
+  - active
+  - completed
+end note
+
+note right of messages
+  direction:
+  - incoming
+  - outgoing
+
+  message_type:
+  - text
+  - image
+  - mixed
+end note
+
+note right of songs
+  status:
+  - pending
+  - confirmed
+  - listened
+  - cancelled
+
+  Puede existir sin contacto
+  ni conversacion cuando se crea
+  desde /canciones.
+end note
+
+note right of webhook_events
+  Webhook idempotente por event_id.
+  El flujo actual procesa
+  eventType = song.listened.
+end note
+
+@enduml

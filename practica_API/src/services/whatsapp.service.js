@@ -42,8 +42,10 @@ async function validateToken() {
   }
 }
 
-function getMessagesApiUrl() {
-  if (!env.whatsappPhoneNumberId) {
+function getMessagesApiUrl(phoneNumberId) {
+  const resolvedPhoneNumberId = phoneNumberId || env.whatsappPhoneNumberId;
+
+  if (!resolvedPhoneNumberId) {
     throw createHttpError(
       500,
       "WHATSAPP_PHONE_NUMBER_ID_MISSING",
@@ -51,7 +53,7 @@ function getMessagesApiUrl() {
     );
   }
 
-  return `https://graph.facebook.com/${env.whatsappGraphVersion}/${env.whatsappPhoneNumberId}/messages`;
+  return `https://graph.facebook.com/${env.whatsappGraphVersion}/${resolvedPhoneNumberId}/messages`;
 }
 
 function getAuthHeaders() {
@@ -69,8 +71,11 @@ function getAuthHeaders() {
   };
 }
 
-async function sendPayload(payload) {
-  const response = await fetch(getMessagesApiUrl(), {
+async function sendPayload(payload, options = {}) {
+  console.info(
+    `[WhatsApp] Enviando payload tipo ${payload.type} a ${payload.to}.`
+  );
+  const response = await fetch(getMessagesApiUrl(options.phoneNumberId), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload)
@@ -85,46 +90,56 @@ async function sendPayload(payload) {
     );
   }
 
-  return response.json();
+  const body = await response.json();
+  console.info("[WhatsApp] Cloud API acepto la respuesta.");
+  return body;
 }
 
-async function sendTextMessage(to, text) {
+async function sendTextMessage(to, text, options = {}) {
   if (!text) {
     return null;
   }
 
-  return sendPayload({
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    to,
-    type: "text",
-    text: {
-      preview_url: false,
-      body: text
-    }
-  });
+  return sendPayload(
+    {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to,
+      type: "text",
+      text: {
+        preview_url: false,
+        body: text
+      }
+    },
+    options
+  );
 }
 
-async function sendImageMessage(to, imageUrl, caption) {
+async function sendImageMessage(to, imageUrl, caption, options = {}) {
   if (!imageUrl) {
     return null;
   }
 
-  return sendPayload({
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    to,
-    type: "image",
-    image: {
-      link: imageUrl,
-      caption: caption || undefined
-    }
-  });
+  return sendPayload(
+    {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to,
+      type: "image",
+      image: {
+        link: imageUrl,
+        caption: caption || undefined
+      }
+    },
+    options
+  );
 }
 
 function extractIncomingMessages(payload) {
   const extracted = [];
   const entries = Array.isArray(payload.entry) ? payload.entry : [];
+
+  console.info(`[WhatsApp] Entradas recibidas en webhook: ${entries.length}`);
 
   for (const entry of entries) {
     const changes = Array.isArray(entry.changes) ? entry.changes : [];
@@ -132,6 +147,10 @@ function extractIncomingMessages(payload) {
     for (const change of changes) {
       const value = change.value || {};
       const messages = Array.isArray(value.messages) ? value.messages : [];
+      const phoneNumberId =
+        typeof value.metadata?.phone_number_id === "string"
+          ? value.metadata.phone_number_id.trim()
+          : "";
 
       for (const message of messages) {
         if (message.type !== "text") {
@@ -148,26 +167,31 @@ function extractIncomingMessages(payload) {
         extracted.push({
           from,
           text,
-          rawMessageId: message.id || null
+          rawMessageId: message.id || null,
+          phoneNumberId: phoneNumberId || null
         });
       }
     }
   }
 
+  if (extracted.length === 0) {
+    console.info("[WhatsApp] No se encontraron mensajes de texto procesables en el payload.");
+  }
+
   return extracted;
 }
 
-async function sendBotResponse(to, botResult) {
+async function sendBotResponse(to, botResult, options = {}) {
   if (botResult.data?.imageUrl) {
-    await sendImageMessage(to, botResult.data.imageUrl, botResult.message);
+    await sendImageMessage(to, botResult.data.imageUrl, botResult.message, options);
 
     if (botResult.data.step === "CONFIRM_SONG") {
-      await sendTextMessage(to, 'Escribe "confirmar" o "cancelar".');
+      await sendTextMessage(to, 'Escribe "confirmar" o "cancelar".', options);
       return;
     }
   }
 
-  await sendTextMessage(to, botResult.message);
+  await sendTextMessage(to, botResult.message, options);
 }
 
 module.exports = {
