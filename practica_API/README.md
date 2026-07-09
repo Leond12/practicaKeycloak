@@ -41,6 +41,7 @@ Ejecutar:
 ```bash
 psql -d minibot_playlist -f sql/001_create_tables.sql
 psql -d minibot_playlist -f sql/002_seed_data.sql
+psql -d minibot_playlist -f sql/003_flow_enhancements.sql
 ```
 
 ## Ejecucion
@@ -67,10 +68,45 @@ npm start
 
 ## Flujo conversacional
 
-1. `POST /messages` con `{"from":"59170000000","text":"Hola"}`
+El bot es una maquina de estados persistida en PostgreSQL y particionada por contacto
+(`from` = telefono), por lo que sostiene conversaciones independientes con varios telefonos a la vez.
+Tras saludar, mantiene una conversacion activa con un menu persistente:
+
+```
+Hola, {nombre}. Que deseas hacer?
+1) Agregar una cancion
+2) Cambiar el estado de una cancion
+3) Ver mis canciones
+4) Salir
+```
+
+Ejemplo de alta de cancion:
+
+1. `POST /messages` con `{"from":"59170000000","text":"Hola"}` (primera vez pide el nombre)
 2. `POST /messages` con el nombre
-3. `POST /messages` con la cancion
-4. `POST /messages` con `confirmar` o `cancelar`
+3. `POST /messages` con `1` (Agregar)
+4. `POST /messages` con la cancion
+5. `POST /messages` con `confirmar` o `cancelar`
+
+Al confirmar, el bot registra la cancion y responde con una imagen unica asignada a esa cancion
+(sin repetir imagenes entre canciones; si se agotan, avisa y registra sin imagen).
+
+### Estados de una cancion
+
+Con la opcion `2` puedes cambiar el estado de tus canciones:
+
+- `1) Reproduciendo` (`playing`)
+- `2) Escuchada` (`listened`)
+- `3) Pendiente` (`pending`)
+
+Si pones una cancion en `Reproduciendo` y **otro** contacto intenta agregar esa misma cancion,
+el bot le indica que esta siendo reproducida por otro usuario.
+
+### Robustez
+
+- Cualquier entrada no reconocida reimprime las instrucciones sin romper el flujo.
+- Escribe `menu` (o `0`) en cualquier paso para volver al menu principal.
+- Las conversaciones con un paso desconocido/heredado se recuperan automaticamente al menu.
 
 ## Webhook
 

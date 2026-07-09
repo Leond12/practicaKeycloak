@@ -8,6 +8,7 @@ function mapSong(row) {
     titulo: row.title,
     escuchada: row.listened,
     estado: row.status,
+    imageFile: row.image_file,
     contactId: row.contact_id,
     conversationId: row.conversation_id,
     createdAt: row.created_at,
@@ -15,9 +16,12 @@ function mapSong(row) {
   };
 }
 
+const SONG_COLUMNS =
+  "id, title, listened, status, image_file, contact_id, conversation_id, created_at, updated_at";
+
 async function list(executor) {
   const result = await executor.query(
-    `SELECT id, title, listened, status, contact_id, conversation_id, created_at, updated_at
+    `SELECT ${SONG_COLUMNS}
      FROM songs
      ORDER BY id ASC`
   );
@@ -25,12 +29,52 @@ async function list(executor) {
   return result.rows.map(mapSong);
 }
 
+async function listByContact(executor, contactId) {
+  const result = await executor.query(
+    `SELECT ${SONG_COLUMNS}
+     FROM songs
+     WHERE contact_id = $1
+     ORDER BY id ASC`,
+    [contactId]
+  );
+
+  return result.rows.map(mapSong);
+}
+
+async function findPlayingByTitleOtherContact(executor, title, contactId) {
+  const result = await executor.query(
+    `SELECT ${SONG_COLUMNS}
+     FROM songs
+     WHERE lower(title) = lower($1)
+       AND status = 'playing'
+       AND contact_id IS DISTINCT FROM $2
+     ORDER BY id ASC
+     LIMIT 1`,
+    [title, contactId]
+  );
+
+  return mapSong(result.rows[0]);
+}
+
+async function listUsedImages(executor) {
+  const result = await executor.query(
+    `SELECT image_file FROM songs WHERE image_file IS NOT NULL`
+  );
+
+  return result.rows.map(row => row.image_file);
+}
+
 async function create(executor, payload) {
   const result = await executor.query(
-    `INSERT INTO songs (title, listened, status, contact_id, conversation_id)
-     VALUES ($1, FALSE, 'pending', $2, $3)
-     RETURNING id, title, listened, status, contact_id, conversation_id, created_at, updated_at`,
-    [payload.title, payload.contactId || null, payload.conversationId || null]
+    `INSERT INTO songs (title, listened, status, image_file, contact_id, conversation_id)
+     VALUES ($1, FALSE, 'pending', $2, $3, $4)
+     RETURNING ${SONG_COLUMNS}`,
+    [
+      payload.title,
+      payload.imageFile || null,
+      payload.contactId || null,
+      payload.conversationId || null
+    ]
   );
 
   return mapSong(result.rows[0]);
@@ -49,7 +93,7 @@ async function createMany(executor, titles) {
 
 async function findById(executor, id) {
   const result = await executor.query(
-    `SELECT id, title, listened, status, contact_id, conversation_id, created_at, updated_at
+    `SELECT ${SONG_COLUMNS}
      FROM songs
      WHERE id = $1`,
     [id]
@@ -60,7 +104,7 @@ async function findById(executor, id) {
 
 async function findByIdForUpdate(executor, id) {
   const result = await executor.query(
-    `SELECT id, title, listened, status, contact_id, conversation_id, created_at, updated_at
+    `SELECT ${SONG_COLUMNS}
      FROM songs
      WHERE id = $1
      FOR UPDATE`,
@@ -78,8 +122,23 @@ async function updateListened(executor, id, listened) {
          status = $3,
          updated_at = NOW()
      WHERE id = $1
-     RETURNING id, title, listened, status, contact_id, conversation_id, created_at, updated_at`,
+     RETURNING ${SONG_COLUMNS}`,
     [id, listened, status]
+  );
+
+  return mapSong(result.rows[0]);
+}
+
+async function updateStatus(executor, id, status) {
+  const listened = status === "listened";
+  const result = await executor.query(
+    `UPDATE songs
+     SET status = $2,
+         listened = $3,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING ${SONG_COLUMNS}`,
+    [id, status, listened]
   );
 
   return mapSong(result.rows[0]);
@@ -92,7 +151,7 @@ async function markAsListened(executor, id) {
          status = 'listened',
          updated_at = NOW()
      WHERE id = $1
-     RETURNING id, title, listened, status, contact_id, conversation_id, created_at, updated_at`,
+     RETURNING ${SONG_COLUMNS}`,
     [id]
   );
 
@@ -112,11 +171,15 @@ async function remove(executor, id) {
 
 module.exports = {
   list,
+  listByContact,
+  findPlayingByTitleOtherContact,
+  listUsedImages,
   create,
   createMany,
   findById,
   findByIdForUpdate,
   updateListened,
+  updateStatus,
   markAsListened,
   remove
 };

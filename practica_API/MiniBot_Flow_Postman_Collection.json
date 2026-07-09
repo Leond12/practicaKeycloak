@@ -1,0 +1,353 @@
+{
+  "info": {
+    "_postman_id": "b7e2f1a4-9c3d-4e21-8f77-1a2b3c4d5e6f",
+    "name": "MiniBot Playlist - Flujo del bot + CRM",
+    "description": "Colección para probar el flujo conversacional (POST /messages), el CRM con cambio de estado, los webhooks y el CRUD de canciones.\n\nVariables:\n- baseUrl: http://localhost:3000\n- phoneA / phoneB: teléfonos simulados (cada uno es una conversación independiente)\n- songId: se completa automáticamente al confirmar el alta en el flujo de phoneA\n- webhookSecret: valor de WEBHOOK_SECRET en tu .env\n\nEjecuta las peticiones del folder 'Flujo del bot' EN ORDEN.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "phoneA", "value": "59170000001", "type": "string" },
+    { "key": "phoneB", "value": "59170000002", "type": "string" },
+    { "key": "songId", "value": "", "type": "string" },
+    { "key": "webhookSecret", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Flujo del bot (phoneA - alta y estado)",
+      "item": [
+        {
+          "name": "1. Hola (saludo -> pide nombre)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"Hola\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] },
+            "description": "Primera interacción. Si el contacto es nuevo, pide el nombre (step ASK_NAME); si ya tiene nombre, muestra el menú (step MENU)."
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const d = pm.response.json().data;",
+              "pm.test(\"step ASK_NAME o MENU\", () => pm.expect([\"ASK_NAME\",\"MENU\"]).to.include(d.step));"
+            ] } }
+          ]
+        },
+        {
+          "name": "2. Nombre (-> MENU)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"Ana\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] },
+            "description": "Envía el nombre. Si el contacto ya existía con nombre, este paso ya cae dentro del menú (envía '1' directamente en el siguiente request)."
+          }
+        },
+        {
+          "name": "3. Opcion 1 - Agregar (-> ADD_ASK_SONG)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"1\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "4. Titulo de la cancion (-> ADD_CONFIRM)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"Numb - Linkin Park\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "5. confirmar (crea cancion + imagen unica)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"confirmar\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] },
+            "description": "Registra la canción. La respuesta trae data.imageUrl (imagen única asignada) y data.song. Guarda el id en la variable songId."
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const d = pm.response.json().data;",
+              "if (d.song && d.song.id) { pm.collectionVariables.set(\"songId\", d.song.id); }",
+              "pm.test(\"canción creada con id\", () => pm.expect(d.song).to.have.property(\"id\"));"
+            ] } }
+          ]
+        },
+        {
+          "name": "6. Opcion 2 - Cambiar estado (-> STATUS_PICK_SONG)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"2\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "7. Elegir cancion #1 (-> STATUS_PICK_STATE)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"1\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "8. Estado 1 - Reproduciendo (-> MENU)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"1\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] },
+            "description": "Marca la canción como 'playing'. A partir de aquí otro usuario que la solicite recibirá el aviso de bloqueo."
+          }
+        },
+        {
+          "name": "9. Opcion 3 - Ver mis canciones",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"3\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Flujo del bot (phoneB - bloqueo cross-user)",
+      "item": [
+        {
+          "name": "1. Hola",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneB}}\",\n  \"text\": \"Hola\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "2. Nombre",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneB}}\",\n  \"text\": \"Beto\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "3. Opcion 1 - Agregar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneB}}\",\n  \"text\": \"1\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "4. Misma cancion que reproduce phoneA (bloqueo)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneB}}\",\n  \"text\": \"Numb - Linkin Park\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] },
+            "description": "Debe responder que la canción está siendo reproducida por otro usuario y permanecer en ADD_ASK_SONG."
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const body = pm.response.json();",
+              "pm.test(\"sigue en ADD_ASK_SONG\", () => pm.expect(body.data.step).to.eql(\"ADD_ASK_SONG\"));",
+              "pm.test(\"avisa bloqueo\", () => pm.expect(body.message.toLowerCase()).to.include(\"otro usuario\"));"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Robustez",
+      "item": [
+        {
+          "name": "Entrada invalida en el menu",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"asdfghjk\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "Atajo global 'menu'",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"from\": \"{{phoneA}}\",\n  \"text\": \"menu\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          }
+        },
+        {
+          "name": "from faltante (400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"text\": \"Hola\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/messages", "host": ["{{baseUrl}}"], "path": ["messages"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"400\", () => pm.response.to.have.status(400));"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CRM",
+      "item": [
+        {
+          "name": "GET - Datos del CRM",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/crm", "host": ["{{baseUrl}}"], "path": ["api", "crm"] },
+            "description": "Devuelve las filas de contactos / conversaciones / canciones."
+          }
+        },
+        {
+          "name": "PATCH - Estado -> playing",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"playing\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/crm/songs/{{songId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "crm", "songs", "{{songId}}", "status"] },
+            "description": "Cambia el estado de la canción {{songId}} a reproduciéndose. Usa el songId capturado en el flujo de phoneA."
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"estado playing\", () => pm.expect(pm.response.json().data.estado).to.eql(\"playing\"));"
+            ] } }
+          ]
+        },
+        {
+          "name": "PATCH - Estado -> listened",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"listened\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/crm/songs/{{songId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "crm", "songs", "{{songId}}", "status"] }
+          }
+        },
+        {
+          "name": "PATCH - Estado -> pending",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"pending\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/crm/songs/{{songId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "crm", "songs", "{{songId}}", "status"] }
+          }
+        },
+        {
+          "name": "PATCH - Estado invalido (400)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"foo\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/crm/songs/{{songId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "crm", "songs", "{{songId}}", "status"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test(\"400\", () => pm.response.to.have.status(400));"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Canciones (CRUD)",
+      "item": [
+        {
+          "name": "GET - Todas las canciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/canciones", "host": ["{{baseUrl}}"], "path": ["canciones"] }
+          }
+        },
+        {
+          "name": "GET - Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          }
+        },
+        {
+          "name": "POST - Crear cancion",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"The Black - Imminence\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/canciones", "host": ["{{baseUrl}}"], "path": ["canciones"] }
+          }
+        },
+        {
+          "name": "PATCH - Marcar escuchada",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"escuchada\": true\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/canciones/{{songId}}", "host": ["{{baseUrl}}"], "path": ["canciones", "{{songId}}"] }
+          }
+        },
+        {
+          "name": "DELETE - Eliminar cancion",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/canciones/{{songId}}", "host": ["{{baseUrl}}"], "path": ["canciones", "{{songId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "POST - Webhook confirmacion (song.listened)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-webhook-secret", "value": "{{webhookSecret}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"eventId\": \"reproduccion-001\",\n  \"eventType\": \"song.listened\",\n  \"songId\": {{songId}},\n  \"status\": \"listened\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/webhook/confirmacion", "host": ["{{baseUrl}}"], "path": ["webhook", "confirmacion"] },
+            "description": "Marca una canción como escuchada. Idempotente: repetir con el mismo eventId devuelve alreadyProcessed=true. Requiere x-webhook-secret."
+          }
+        },
+        {
+          "name": "GET - Verificacion webhook WhatsApp",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=TU_VERIFY_TOKEN&hub.challenge=12345",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhook", "whatsapp"],
+              "query": [
+                { "key": "hub.mode", "value": "subscribe" },
+                { "key": "hub.verify_token", "value": "TU_VERIFY_TOKEN" },
+                { "key": "hub.challenge", "value": "12345" }
+              ]
+            },
+            "description": "Reemplaza TU_VERIFY_TOKEN por el valor de WHATSAPP_WEBHOOK_VERIFY_TOKEN. Si coincide, responde el challenge."
+          }
+        }
+      ]
+    }
+  ]
+}

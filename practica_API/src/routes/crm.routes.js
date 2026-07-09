@@ -6,5 +6,6 @@ const router = express.Router();
 
 router.get("/crm", asyncHandler(crmController.getCrmPage));
 router.get("/api/crm", asyncHandler(crmController.getCrmData));
+router.patch("/api/crm/songs/:id/status", asyncHandler(crmController.updateSongStatus));
 
 module.exports = router;

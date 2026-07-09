@@ -87,6 +87,37 @@
         color: var(--muted);
       }
 
+      select.status-select {
+        font-family: inherit;
+        font-size: 0.85rem;
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      select.status-select:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .row-feedback {
+        display: block;
+        margin-top: 4px;
+        font-size: 0.75rem;
+        min-height: 0.95rem;
+      }
+
+      .row-feedback.ok {
+        color: #2e7d32;
+      }
+
+      .row-feedback.err {
+        color: #b3261e;
+      }
+
       @media (max-width: 800px) {
         .panel {
           overflow-x: auto;
@@ -113,6 +144,7 @@
               <th>Canción</th>
               <th>Estado</th>
               <th>Escuchada</th>
+              <th>Cambiar estado</th>
               <th>Fecha</th>
             </tr>
           </thead>
