@@ -18,7 +18,10 @@ const env = {
     process.env.WHATSAPP_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN || "",
   whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
   whatsappWebhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || "",
-  whatsappGraphVersion: process.env.WHATSAPP_GRAPH_VERSION || "v25.0"
+  whatsappGraphVersion: process.env.WHATSAPP_GRAPH_VERSION || "v25.0",
+  veripagosUser: process.env.VERIPAGOS_USER || "",
+  veripagosPass: process.env.VERIPAGOS_PASS || "",
+  veripagosSecretKey: process.env.VERIPAGOS_SECRET_KEY || ""
 };
 
 module.exports = env;

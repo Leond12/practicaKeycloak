@@ -11,17 +11,17 @@ async function listRows(executor) {
        s.title,
        s.status AS song_status,
        s.listened,
-       COALESCE(s.created_at, conv.created_at, c.created_at) AS created_at
-     FROM contacts c
+       s.created_at AS created_at
+     FROM songs s
+     LEFT JOIN contacts c ON s.contact_id = c.id
      LEFT JOIN LATERAL (
-       SELECT id, current_step, status, created_at
+       SELECT id, current_step, status
        FROM conversations
        WHERE contact_id = c.id
        ORDER BY created_at DESC
        LIMIT 1
      ) conv ON TRUE
-     LEFT JOIN songs s ON s.contact_id = c.id
-     ORDER BY created_at DESC NULLS LAST, c.id DESC, s.id DESC`
+     ORDER BY s.status = 'playing' DESC, s.status = 'confirmed' DESC, s.status = 'pending' DESC, s.id DESC`
   );
 
   return result.rows;

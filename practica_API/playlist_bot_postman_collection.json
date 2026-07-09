@@ -1,0 +1,219 @@
+{
+	"info": {
+		"_postman_id": "8f3a3e6c-7e8c-4a3b-9a2d-7d8b5c9a4e3f",
+		"name": "Ecoartec Playlist Bot API Collection",
+		"description": "Colección de Postman para el Bot de Playlist de Ecoartec, que incluye el webhook de WhatsApp, la pasarela de pagos de Veripagos y los endpoints de control del CRM.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "WhatsApp Webhook",
+			"item": [
+				{
+					"name": "Verificar Webhook (GET)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=mi_secreto_para_el_bot_123&hub.challenge=challenge12345",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webhook",
+								"whatsapp"
+							],
+							"query": [
+								{
+									"key": "hub.mode",
+									"value": "subscribe"
+								},
+								{
+									"key": "hub.verify_token",
+									"value": "mi_secreto_para_el_bot_123"
+								},
+								{
+									"key": "hub.challenge",
+									"value": "challenge12345"
+								}
+							]
+						},
+						"description": "Endpoint utilizado por Meta para validar la configuración de tu webhook usando el verify token."
+					},
+					"response": []
+				},
+				{
+					"name": "Recibir Mensaje (POST)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"object\": \"whatsapp_business_account\",\n  \"entry\": [\n    {\n      \"id\": \"1916250735729023\",\n      \"changes\": [\n        {\n          \"value\": {\n            \"messaging_product\": \"whatsapp\",\n            \"metadata\": {\n              \"display_phone_number\": \"15556091789\",\n              \"phone_number_id\": \"1249887164863723\"\n            },\n            \"contacts\": [\n              {\n                \"profile\": {\n                  \"name\": \"Leo Ponce\"\n                },\n                \"wa_id\": \"59175020481\"\n              }\n            ],\n            \"messages\": [\n              {\n                \"from\": \"59175020481\",\n                \"id\": \"wamid.HBgLNTkxNzUwMjA0ODEVAgASGBYzRUIw\",\n                \"timestamp\": \"1783610496\",\n                \"text\": {\n                  \"body\": \"Hola\"\n                },\n                \"type\": \"text\"\n              }\n            ]\n          },\n          \"field\": \"messages\"\n        }\n      ]\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/webhook/whatsapp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webhook",
+								"whatsapp"
+							]
+						},
+						"description": "Simula el webhook que Meta envía a tu servidor cuando un usuario escribe un mensaje de texto por WhatsApp."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Veripagos Webhook",
+			"item": [
+				{
+					"name": "Confirmar Pago Exitoso (POST)",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "s9Ee7!Cw67",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "victorhugo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"movimiento_id\": 974836,\n  \"monto\": 1.00,\n  \"detalle\": \"VP: 974836 Prioridad Cancion ID 6\",\n  \"estado\": \"Completado\",\n  \"data\": [6],\n  \"remitente\": {\n    \"nombre\": \"PONCE DE LEON ESPINOZA LEONARDO\",\n    \"banco\": \"Banco Ganadero S.A.\",\n    \"documento\": \"11085782\",\n    \"cuenta\": \"1310360681\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/webhook/veripagos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webhook",
+								"veripagos"
+							]
+						},
+						"description": "Simula la confirmación de pago (Callback/Webhook) que la pasarela Veripagos envía a tu servidor cuando un usuario escanea y paga un código QR de prioridad."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "CRM Control API",
+			"item": [
+				{
+					"name": "Obtener Datos del CRM (GET)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/crm",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"crm"
+							]
+						},
+						"description": "Retorna la lista de todas las canciones registradas con su estado de cola, conversaciones y contactos correspondientes."
+					},
+					"response": []
+				},
+				{
+					"name": "Reproducir Canción (POST)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/crm/play/6",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"crm",
+								"play",
+								"6"
+							]
+						},
+						"description": "Indica al CRM que empiece a reproducir una canción específica por su ID. La canción anterior pasará a estado 'Escuchada' (listened)."
+					},
+					"response": []
+				},
+				{
+					"name": "Detener Canción (POST)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/crm/stop/6",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"crm",
+								"stop",
+								"6"
+							]
+						},
+						"description": "Detiene la reproducción de la canción actual (la marca como 'Escuchada')."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://investigations-tactics-bringing-robots.trycloudflare.com",
+			"type": "string"
+		}
+	]
+}

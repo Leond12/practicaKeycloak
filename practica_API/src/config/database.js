@@ -9,6 +9,21 @@ const pool = new Pool({
   password: env.dbPassword
 });
 
+// --- MIGRACIÓN DE VERIPAGOS Y ESTADO PLAYING ---
+pool.query(`
+  ALTER TABLE songs ADD COLUMN IF NOT EXISTS veripagos_movimiento_id VARCHAR(100);
+  ALTER TABLE songs ADD COLUMN IF NOT EXISTS veripagos_estado VARCHAR(50);
+  
+  -- Modificar check constraint para incluir estado 'playing'
+  ALTER TABLE songs DROP CONSTRAINT IF EXISTS songs_status_check;
+  ALTER TABLE songs ADD CONSTRAINT songs_status_check CHECK (status IN ('pending', 'confirmed', 'playing', 'listened', 'cancelled'));
+`).then(() => {
+  console.info("[DB] Columnas de Veripagos y estados del reproductor inicializados con éxito.");
+}).catch(err => {
+  console.error("[DB] Error migrando base de datos para estados de música:", err);
+});
+// -----------------------------------------------
+
 async function query(text, params = []) {
   return pool.query(text, params);
 }

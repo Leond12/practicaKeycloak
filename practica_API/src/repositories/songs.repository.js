@@ -100,6 +100,9 @@ async function markAsListened(executor, id) {
 }
 
 async function remove(executor, id) {
+  // Eliminar primero eventos vinculados en webhook_events para no violar la FK
+  await executor.query(`DELETE FROM webhook_events WHERE song_id = $1`, [id]);
+
   const result = await executor.query(
     `DELETE FROM songs
      WHERE id = $1

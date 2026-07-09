@@ -96,12 +96,37 @@
           min-width: 760px;
         }
       }
+      @keyframes pulse-text {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+      @keyframes rotate-disc {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
     <main>
       <h1>MiniBot Playlist CRM</h1>
       <p>Vista simple de contactos, conversaciones y canciones persistidas en PostgreSQL.</p>
+
+      <!-- Reproduciendo Ahora Banner -->
+      <div id="now-playing-card" class="panel" style="margin-bottom: 24px; padding: 20px; background: linear-gradient(135deg, #2f2416, #1c150c); color: #fff; border: none; display: none; align-items: center; justify-content: space-between; gap: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="font-size: 2.2rem; animation: rotate-disc 4s linear infinite; display: inline-block;">💿</div>
+          <div>
+            <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; color: #f97316; font-weight: bold; margin-bottom: 4px;">🔊 Reproduciendo Ahora</div>
+            <div id="now-playing-title" style="font-size: 1.3rem; font-weight: bold;">Título - Artista</div>
+            <div id="now-playing-user" style="font-size: 0.85rem; color: #d6c4a4; margin-top: 2px;">Pedido por: -</div>
+          </div>
+        </div>
+        <div>
+          <button id="now-playing-stop-btn" style="background: #ef4444; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+            ⏹️ Detener
+          </button>
+        </div>
+      </div>
 
       <section class="panel">
         <table>
@@ -114,11 +139,42 @@
               <th>Estado</th>
               <th>Escuchada</th>
               <th>Fecha</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="crm-body"></tbody>
         </table>
       </section>
+
+      <!-- SECCIÓN CONSOLA EN TIEMPO REAL -->
+      <section class="panel" style="margin-top: 32px; background: #0b0f19; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
+          <h3 style="margin: 0; color: #38bdf8; font-family: monospace; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse-glow 1.5s infinite;"></span>
+            Consola del Servidor en Vivo (CMD Logs)
+          </h3>
+          <button onclick="document.getElementById('terminal-logs').innerHTML = ''" style="background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; font-family: monospace;">Limpiar Consola</button>
+        </div>
+        <div id="terminal-logs" style="height: 280px; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; color: #f8fafc; background: #020617; padding: 16px; border-radius: 8px; line-height: 1.5; white-space: pre-wrap; border: 1px solid #0f172a;"></div>
+      </section>
+
+      <style>
+        @keyframes pulse-glow {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        #terminal-logs::-webkit-scrollbar {
+          width: 8px;
+        }
+        #terminal-logs::-webkit-scrollbar-track {
+          background: #020617;
+        }
+        #terminal-logs::-webkit-scrollbar-thumb {
+          background: #1e293b;
+          border-radius: 4px;
+        }
+      </style>
     </main>
 
     <script src="/crm.js"></script>
