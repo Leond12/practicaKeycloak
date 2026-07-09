@@ -41,6 +41,24 @@ async function listByContact(executor, contactId) {
   return result.rows.map(mapSong);
 }
 
+// Playlist pública: todas las canciones, con el nombre de quién la agregó (atribución).
+async function listPublic(executor) {
+  const result = await executor.query(
+    `SELECT s.id, s.title, s.listened, s.status, s.image_file,
+            s.contact_id, s.conversation_id, s.created_at, s.updated_at,
+            c.name AS added_by_name, c.external_id AS added_by_external
+     FROM songs s
+     LEFT JOIN contacts c ON c.id = s.contact_id
+     ORDER BY s.id ASC`
+  );
+
+  return result.rows.map(row => ({
+    ...mapSong(row),
+    addedByName: row.added_by_name,
+    addedByExternal: row.added_by_external
+  }));
+}
+
 async function findPlayingByTitleOtherContact(executor, title, contactId) {
   const result = await executor.query(
     `SELECT ${SONG_COLUMNS}
@@ -172,6 +190,7 @@ async function remove(executor, id) {
 module.exports = {
   list,
   listByContact,
+  listPublic,
   findPlayingByTitleOtherContact,
   listUsedImages,
   create,

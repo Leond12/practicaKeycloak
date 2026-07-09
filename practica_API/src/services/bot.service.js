@@ -44,7 +44,7 @@ function menuText(name) {
     `${greeting} ¿Qué deseas hacer?\n` +
     "1) Agregar una canción\n" +
     "2) Cambiar el estado de una canción\n" +
-    "3) Ver mis canciones\n" +
+    "3) Ver la playlist\n" +
     "4) Salir"
   );
 }
@@ -55,7 +55,11 @@ function statusLabel(status) {
 
 function songListText(songs) {
   return songs
-    .map((song, index) => `${index + 1}. ${song.titulo} — ${statusLabel(song.estado)}`)
+    .map((song, index) => {
+      const addedBy = song.addedByName || song.addedByExternal;
+      const suffix = addedBy ? ` · agregó: ${addedBy}` : "";
+      return `${index + 1}. ${song.titulo} — ${statusLabel(song.estado)}${suffix}`;
+    })
     .join("\n");
 }
 
@@ -135,8 +139,8 @@ async function handleMenu(client, ctx) {
     return startStatusFlow(client, ctx);
   }
 
-  if (choice === "3" || choice === "ver" || choice === "mis") {
-    return listMySongs(client, ctx);
+  if (choice === "3" || choice === "ver" || choice === "mis" || choice === "playlist") {
+    return listPlaylist(client, ctx);
   }
 
   if (choice === "4" || choice === "salir") {
@@ -156,12 +160,12 @@ async function handleMenu(client, ctx) {
   });
 }
 
-async function listMySongs(client, ctx) {
-  const songs = await songsRepository.listByContact(client, ctx.contact.id);
+async function listPlaylist(client, ctx) {
+  const songs = await songsRepository.listPublic(client);
   const body =
     songs.length === 0
-      ? "Aún no tienes canciones registradas."
-      : `Tus canciones:\n${songListText(songs)}`;
+      ? "La playlist está vacía."
+      : `Playlist:\n${songListText(songs)}`;
 
   return reply(client, ctx.conversation.id, {
     message: `${body}\n\n${menuText(ctx.contact.name)}`,
@@ -241,11 +245,11 @@ async function handleAddConfirm(client, ctx) {
 }
 
 async function startStatusFlow(client, ctx) {
-  const songs = await songsRepository.listByContact(client, ctx.contact.id);
+  const songs = await songsRepository.listPublic(client);
 
   if (songs.length === 0) {
     return reply(client, ctx.conversation.id, {
-      message: `No tienes canciones para modificar.\n\n${menuText(ctx.contact.name)}`,
+      message: `La playlist está vacía.\n\n${menuText(ctx.contact.name)}`,
       step: STEPS.MENU
     });
   }
@@ -263,7 +267,7 @@ async function startStatusFlow(client, ctx) {
 }
 
 async function handleStatusPickSong(client, ctx) {
-  const songs = await songsRepository.listByContact(client, ctx.contact.id);
+  const songs = await songsRepository.listPublic(client);
   const index = Number.parseInt(ctx.text.trim(), 10) - 1;
 
   if (!Number.isInteger(index) || index < 0 || index >= songs.length) {
@@ -306,7 +310,7 @@ async function handleStatusPickState(client, ctx) {
 
   const song = await songsRepository.findByIdForUpdate(client, songId);
 
-  if (!song || String(song.contactId) !== String(ctx.contact.id)) {
+  if (!song) {
     return resetToMenu(client, ctx, "Esa canción ya no está disponible.");
   }
 
